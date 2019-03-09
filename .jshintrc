@@ -1,0 +1,23 @@
+{
+    // https://github.com/jshint/jshint/blob/4c2d091b7e50ce2681ee48a104578bb969c189ae/examples/.jshintrc#L79
+	"curly": true,
+	"eqeqeq": true,
+	"newcap": true,
+	"noarg": true,
+	"nonew": true,
+	"sub": true,
+	"undef": true,
+	"unused": true,
+	"trailing": true,
+	"boss": true,
+	"eqnull": true,
+	"globalstrict": true,
+	"immed": true,
+	"expr": true,
+	"latedef": "nofunc",
+	"quotmark": false,
+	"indent": 2,
+	"node": true,
+	"esversion": 6,
+	"globals": {}
+}
