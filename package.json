@@ -1,12 +1,12 @@
 {
   "name": "pente",
   "version": "0.2.0",
-  "description": "J&S version",
+  "description": "Pente - J&S version",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
   },
-  "author": "J&S",
+  "author": "Bernard Jorion",
   "license": "ISC"
 }

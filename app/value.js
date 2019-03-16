@@ -11,11 +11,8 @@ const CURRENT = '2';
 const MAX = 100000;
 const values = new Map();
 
-values.set('10', [0, 1]);
-values.set('20', [0, 5]);
-
-// missing
-// 0 2 0 2 0
+values.set('10', [0, 3]);
+values.set('20', [0, 10]); // adjacent to self
 
 values.set('1220', [0, 0, 0, 2000]); // avoid peer capture
 values.set('2110', [0, 0, 0, 4000]); // capture peer
@@ -25,9 +22,10 @@ values.set('1020', [0, -400, 0, -100]);
 
 values.set('01100', [0, 0, 0, 500, 0]);
 values.set('02200', [0, 0, 0, 1000, 0]);
+values.set('00020', [0, 5, 0, 0, 0]); // 1 cell away from self
 
 values.set('01110', [3000, 0, 0, 0, 3000]);
-values.set('02220', [3000, 0, 0, 0, 3000]);
+values.set('02220', [4000, 0, 0, 0, 4000]);
 values.set('22220', [0, 0, 0, 0, MAX]);
 values.set('11110', [0, 0, 0, 0, 5000]);
 values.set('02202', [200, 0, 0, 3000, 0]);
@@ -36,7 +34,7 @@ values.set('01101', [200, 0, 0, 3000, 0]);
 values.set('11010', [0, 0, 3000, 0, 200]);
 values.set('02111', [-500, 0, 0, 0, 0]);
 values.set('21110', [0, 0, 0, 0, -200]);
-values.set('12220', [0, 0, 0, 0, 3000]);
+values.set('12220', [0, 0, 0, 0, 4000]);
 
 // --- Exported Object ---
 (function() {

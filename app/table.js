@@ -91,7 +91,7 @@ Table.prototype.save = function() {
         for (let x = 0; x < this.n; x++) {
             row += this.matr[y][x].toString() + ';';
         }
-        line += row;
+        line += row + '\n';
     }
     return line;
 };
@@ -121,7 +121,7 @@ Table.prototype.getYX = function (y, x) {
 Table.prototype.setYX = function (y, x, val) {
 
     if (isNaN(val)) {
-        throw new Error(`setting invalid value (val NaN): ${y}-${x}:${val}`);
+        throw new Error(`setting invalid value (val NaN): ${y}-${x}: ${val}`);
     }
     if (x >= 0 && x < this.n && y >= 0 && y < this.n) {
         this.matr[y][x] = val;

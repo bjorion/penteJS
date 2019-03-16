@@ -13,11 +13,17 @@ const VERSION = 'pente-v1';
 /** Length of a sequence for a victory. */
 const LEN_MAX = 5;
 
+/** Middle index of a pattern. */
+const MID = LEN_MAX - 1;
+
 /** Nbr of peers to be captured for a victory. */
 const N_PEER = 5;
 
 /** Min position for the first player second turn. */
 const MIN_POS = 4;
+
+const CELL_DEFAULT_VALUE = 100;
+const CELL_FORBIDDEN_VALUE = -999;
 
 const DIRS = [[0, 1], [1, 1], [1, 0], [1, -1]]; // E, SE, S, SW
 const ALL_DIRS = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]];
@@ -98,6 +104,10 @@ Game.prototype._checkWin = function (cell) {
     return win;
 };
 
+/**
+ * @returns {Array}
+ * @private
+ */
 Game.prototype._buildPattern = function (y, x, dir, player, opponent) {
 
     const pattern = new Array(2 * LEN_MAX - 1);
@@ -121,9 +131,8 @@ Game.prototype._buildPattern = function (y, x, dir, player, opponent) {
 Game.prototype._computeVal = function (pattern, len) {
 
     let val = 0;
-    const mid = 4;
     for (let k = 0; k < len; k++) {
-        let key = pattern.slice(mid - len + k + 1, mid + k + 1).join('');
+        let key = pattern.slice(MID - len + k + 1, MID + k + 1).join('');
         // skip any key containing '.' (out-of-bound index)
         if (key.indexOf('.') === -1) {
             let resp = Value.getValue(key);
@@ -149,6 +158,32 @@ Game.prototype._computeVal = function (pattern, len) {
     return val;
 };
 
+Game.prototype._computeValYX = function (y, x, debug) {
+
+    let cellSum = CELL_FORBIDDEN_VALUE;
+    let cellPlayer = this.tb.getYX(y, x);
+    // check if the case is empty
+    if (cellPlayer === 0) {
+        cellSum = CELL_DEFAULT_VALUE;
+        for (let dir of DIRS) {
+            // compute the pattern for the current cell and direction
+            let pattern = this._buildPattern(y, x, dir, this.getCurrentPlayer(), this.getOpponent());
+
+            // compute the value of the current cell
+            let val = 0;
+            val += this._computeVal(pattern, 2);
+            val += this._computeVal(pattern, 4);
+            val += this._computeVal(pattern, 5);
+            if (debug) {
+                pattern[MID] = '_';
+                console.log(`pattern: ${pattern}, val: ${val}`);
+            }
+            cellSum += val;
+        }
+    }
+    return cellSum;
+};
+
 Game.prototype._findPlayerByNum = function (number) {
 
     let player = null;
@@ -163,9 +198,9 @@ Game.prototype._findPlayerByNum = function (number) {
 };
 
 /**
- * @return the cell with the highest value
+ * @return {Cell} the cell with the highest value
  */
-Game.prototype._findHighestValue = function(lowest) {
+Game.prototype._findHighestValue = function (lowest) {
 
     let bestValue = lowest;
     let bestCell = null;
@@ -173,7 +208,7 @@ Game.prototype._findHighestValue = function(lowest) {
         for (let x = 0; x < this.size; x++) {
             let val = this.vals[y][x];
             if (val > bestValue) {
-                bestCell = new Cell(y, x, null, val);
+                bestCell = new Cell(y, x, this.currentPlayer, val);
                 bestValue = val;
             }
         }
@@ -205,7 +240,11 @@ function GameBuilder(data) {
     game.winner = game._findPlayerByNum(infos[index++]);
     game.gameOver = (infos[index] === 'true');
     let size = arr[4];
-    game.tb = Table.TableBuilder(size, arr[5]);
+    let str = '';
+    for (let i = 5; i < 5 + size; i++) {
+        str += arr[i];
+    }
+    game.tb = Table.TableBuilder(size, str);
     return game;
 }
 
@@ -244,7 +283,7 @@ Game.prototype.displayScore = function () {
         cx += ('     ' + String.fromCharCode(65 + i));
     }
     console.log(cx);
-	
+
     for (let y = 0; y < this.size; y++) {
         let cx = y.toString().padStart(3) + ':';
         for (let x = 0; x < this.size; x++) {
@@ -327,15 +366,18 @@ Game.prototype.getOpponent = function (player) {
     return (current === this.p1) ? this.p2 : this.p1;
 };
 
+Game.prototype.computeValYX = function (y, x) {
+
+    return this._computeValYX(y, x, true);
+};
+
 /**
  * Compute the best move possible for the given player.
  * The values for each cell are saved in the array matr[][].
+ *
+ * @return {Cell} the best move found
  */
 Game.prototype.computeBestMove = function () {
-
-    const defaultValue = 100;
-    const forbidden = -999;
-    const player = this.getCurrentPlayer();
 
     // second turn = random next to the center
     if (this.turn === 2) {
@@ -344,7 +386,7 @@ Game.prototype.computeBestMove = function () {
         do {
             x = this.middle + Math.floor(Math.random() * 3) - 1;
             y = this.middle + Math.floor(Math.random() * 3) - 1;
-            bestCell = new Cell(y, x, player, defaultValue);
+            bestCell = new Cell(y, x, this.getCurrentPlayer(), CELL_DEFAULT_VALUE);
         } while (x === this.middle && y === this.middle);
         return bestCell;
     }
@@ -356,7 +398,6 @@ Game.prototype.computeBestMove = function () {
     }
 
     // initialize
-    let opponent = this.getOpponent();
     let matr = new Array(this.size);
     for (let y = 0; y < this.size; y++) {
         matr[y] = new Array(this.size);
@@ -368,29 +409,11 @@ Game.prototype.computeBestMove = function () {
     // loop through all the cells and compute their value
     for (let y = 0; y < this.size; y++) {
         for (let x = 0; x < this.size; x++) {
-            let cellSum = forbidden;
-            let cellPlayer = this.tb.getYX(y, x);
-            // check if the case is empty
-            if (cellPlayer === 0) {
-                cellSum = defaultValue;
-                for (let dir of DIRS) {
-                    // compute the pattern for the current cell and direction
-                    const pattern = this._buildPattern(y, x, dir, player, opponent);
-
-                    // compute the value of the current cell
-                    let val = 0;
-                    val += this._computeVal(pattern, 2);
-                    val += this._computeVal(pattern, 4);
-                    val += this._computeVal(pattern, 5);
-
-                    cellSum += val;
-                }
-            }
-            matr[y][x] = cellSum;
+            matr[y][x] = this._computeValYX(y, x, false);
         }
     }
     this.vals = matr;
-    return this._findHighestValue(forbidden);
+    return this._findHighestValue(CELL_FORBIDDEN_VALUE);
 };
 
 module.exports = Game;

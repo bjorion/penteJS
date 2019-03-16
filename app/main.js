@@ -26,8 +26,14 @@ stdin.addListener("data", function (d) {
         return;
     }
 
-    let coords = d.split(" ", 2);
-    let cell = new Cell(coords[0], coords[1], game.getCurrentPlayer());
+    let cell = null;
+    if (d === '00') {
+        cell = game.computeBestMove();
+    }
+    else {
+        let coords = d.split(' ', 2);
+        cell = new Cell(coords[0], coords[1], game.getCurrentPlayer());
+    }
     if (!cell.isValidCoord()) {
         Screen.println('Invalid coordinates: ' + cell.toString() + '. Try ".help"');
         return;
@@ -89,12 +95,15 @@ function parseInput(d) {
     else if (d === '.sc' || d === '.score') {
         game.displayScore();
     }
+    else if (d.indexOf('.sc') == 0) {
+        let coords = d.split(' ', 3);
+        let cell = new Cell(coords[1], coords[2], game.getCurrentPlayer());
+        game.computeValYX(cell.getY(), cell.getX());
+    }
     // hint
     else if (d === '.hi' || d === '.hint') {
         let bestMove = game.computeBestMove();
         Screen.println(`Best move found for ${game.getCurrentPlayer()}: ${bestMove.toString()}`);
-    }
-    else if (d === '.aa') {
     }
     else if (d === '.bo' || d === '.board') {
         game.displayBoard();
@@ -103,12 +112,12 @@ function parseInput(d) {
     else if (d === '?' || d === '.help') {
         Screen.println('.bo\tDisplay the board');
         Screen.println('.hi\tGive a hint');
-        // Screen.println('.aa\tPlay the advised move');
         Screen.println('.ld\tLoad the game');
         Screen.println('.sc\tDisplay the score for each cell');
         Screen.println('.st\tDisplay the status');
         Screen.println('.sv\tSave the game');
         Screen.println('.x \tExit the game');
+        Screen.println('00 \tPlay the best move')
     }
     // other command
     else if (d.charCodeAt(0) === 46) {
