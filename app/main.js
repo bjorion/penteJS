@@ -70,7 +70,7 @@ function parseInput(d) {
     }
     // status
     else if (d === '.st' || d === '.status') {
-        Screen.println('Current:  ' + game.getCurrentPlayer().debug());
+        Screen.println('Current : ' + game.getCurrentPlayer().debug());
         Screen.println('Opponent: ' + game.getOpponent().debug());
     }
     // save
@@ -94,18 +94,21 @@ function parseInput(d) {
         let bestMove = game.computeBestMove();
         Screen.println(`Best move found for ${game.getCurrentPlayer()}: ${bestMove.toString()}`);
     }
+    else if (d === '.aa') {
+    }
     else if (d === '.bo' || d === '.board') {
         game.displayBoard();
     }
     // help
     else if (d === '?' || d === '.help') {
-        Screen.println(".bo\tDisplay the board");
-        Screen.println(".hi\tGive a hint");
-        Screen.println(".ld\tLoad the game");
-        Screen.println(".sc\tDisplay the score for each cell");
-        Screen.println(".st\tDisplay the status");
-        Screen.println(".sv\tSave the game");
-        Screen.println(".x \tExit the game");
+        Screen.println('.bo\tDisplay the board');
+        Screen.println('.hi\tGive a hint');
+        // Screen.println('.aa\tPlay the advised move');
+        Screen.println('.ld\tLoad the game');
+        Screen.println('.sc\tDisplay the score for each cell');
+        Screen.println('.st\tDisplay the status');
+        Screen.println('.sv\tSave the game');
+        Screen.println('.x \tExit the game');
     }
     // other command
     else if (d.charCodeAt(0) === 46) {

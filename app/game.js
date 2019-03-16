@@ -69,7 +69,7 @@ Game.prototype._capturePeer = function (cell, y, x) {
         if (this.tb.get(c2) === opponent.getNumber()) {
             let c3 = new Cell(cell.getY() + 3 * y, cell.getX() + 3 * x);
             if (this.tb.get(c3) === player.getNumber()) {
-                console.log('Peer captured');
+                console.log(`Peer captured: ${cell.getY()}-${cell.getX()}`);
                 this.tb.set(c1);
                 this.tb.set(c2);
                 player.incPeerWon();
@@ -105,13 +105,13 @@ Game.prototype._buildPattern = function (y, x, dir, player, opponent) {
         let num = this.tb.getYX(y + k * dir[0], x + k * dir[1]);
         let chr = '.';
         if (num === player.getNumber()) {
-            chr = '2';
+            chr = Value.current;
         }
         else if (num === opponent.getNumber()) {
-            chr = '1';
+            chr = Value.opponent;
         }
         else if (num === 0) {
-            chr = '0';
+            chr = Value.empty;
         }
         pattern[LEN_MAX + k - 1] = chr;
     }
@@ -126,10 +126,23 @@ Game.prototype._computeVal = function (pattern, len) {
         let key = pattern.slice(mid - len + k + 1, mid + k + 1).join('');
         // skip any key containing '.' (out-of-bound index)
         if (key.indexOf('.') === -1) {
-            let arr = Value.getValue(key);
-            if (arr != null) {
+            let resp = Value.getValue(key);
+            if (resp.arr !== null) {
                 // console.log(`pattern: ${pattern}, key: ${key}, k: ${k}, val: ${arr[len - k -1]}`);
-                val += arr[len - k - 1];
+                val += resp.arr[len - k - 1];
+            }
+            // peer captured: each peer has an increasing worth
+            if (resp.peerCapturer !== Value.empty) {
+                if (resp.peerCapturer === Value.current) {
+                    let won = this.getCurrentPlayer().getPeerWon();
+                    console.log("bonus added for capturing a peer: " + won);
+                    val += won * 500;
+                }
+                if (resp.peerCapturer === Value.opponent) {
+                    let won = this.getCurrentPlayer().getPeerWon();
+                    console.log("bonus added for avoiding losing a peer: " + won);
+                    val += won * 300;
+                }
             }
         }
     }
@@ -191,7 +204,8 @@ function GameBuilder(data) {
     game.currentPlayer = game._findPlayerByNum(infos[index++]);
     game.winner = game._findPlayerByNum(infos[index++]);
     game.gameOver = (infos[index] === 'true');
-    game.tb = Table.TableBuilder(arr[4]);
+    let size = arr[4];
+    game.tb = Table.TableBuilder(size, arr[5]);
     return game;
 }
 
@@ -221,16 +235,22 @@ Game.prototype.displayBoard = function () {
 Game.prototype.displayScore = function () {
 
     if (this.vals === null) {
-        console.log("Error: data not yet initialized");
+        console.log('Error: data not yet initialized');
         return;
     }
 
+    let cx = '    ';
+    for (let i = 0; i < this.size; i++) {
+        cx += ('     ' + String.fromCharCode(65 + i));
+    }
+    console.log(cx);
+	
     for (let y = 0; y < this.size; y++) {
-        let cx = y.toString().padStart(2);
+        let cx = y.toString().padStart(3) + ':';
         for (let x = 0; x < this.size; x++) {
-            let val = this.vals[y][x];
-            val = Math.max(0, val);
-            cx += val.toString().padStart(6);
+            let val = Math.max(0, this.vals[y][x]);
+            let player = this.tb.getYX(y, x);
+            cx += (player === 0) ? val.toString().padStart(6) : this.tb.getIcon(player).padStart(6);
         }
         console.log(cx);
     }
@@ -247,7 +267,7 @@ Game.prototype.start = function () {
 Game.prototype.play = function (cell) {
 
     if (this.gameOver) {
-        throw new Error("Game is Over");
+        throw new Error('Game is Over');
     }
 
     this.vals = null;
@@ -267,9 +287,9 @@ Game.prototype.play = function (cell) {
 
 Game.prototype.isCellAvailable = function (cell) {
 
-    let ok = (this.tb.get(cell) == 0);
-    if (this.getTurn() == 3) {
-        ok = (Math.abs(cell.getX() - this.middle) >= MIN_POS) || (Math.abs(cell.getY() - this.middle) >= MIN_POS);
+    let ok = (this.tb.get(cell) === 0);
+    if (this.getTurn() === 3) {
+        // ok = (Math.abs(cell.getX() - this.middle) >= MIN_POS) || (Math.abs(cell.getY() - this.middle) >= MIN_POS);
     }
     return ok;
 };
@@ -313,8 +333,8 @@ Game.prototype.getOpponent = function (player) {
  */
 Game.prototype.computeBestMove = function () {
 
-    const defaultValue = 500;
-    const forbidden = -1000;
+    const defaultValue = 100;
+    const forbidden = -999;
     const player = this.getCurrentPlayer();
 
     // second turn = random next to the center
@@ -331,8 +351,8 @@ Game.prototype.computeBestMove = function () {
 
     // third turn = on the square
     if (this.turn === 3) {
-        let cell = this.history[1];
-        console.log("cell: " + cell);
+        // let cell = this.history[1];
+        // console.log('cell: ' + cell);
     }
 
     // initialize
@@ -351,7 +371,7 @@ Game.prototype.computeBestMove = function () {
             let cellSum = forbidden;
             let cellPlayer = this.tb.getYX(y, x);
             // check if the case is empty
-            if (cellPlayer == 0) {
+            if (cellPlayer === 0) {
                 cellSum = defaultValue;
                 for (let dir of DIRS) {
                     // compute the pattern for the current cell and direction
@@ -359,10 +379,10 @@ Game.prototype.computeBestMove = function () {
 
                     // compute the value of the current cell
                     let val = 0;
+                    val += this._computeVal(pattern, 2);
                     val += this._computeVal(pattern, 4);
                     val += this._computeVal(pattern, 5);
 
-                    // console.log("pattern: " + pattern);
                     cellSum += val;
                 }
             }

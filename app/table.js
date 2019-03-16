@@ -1,13 +1,14 @@
 'use strict';
 
 const Screen = require('./screen');
+const icons = ['.', 'O', 'X'];
 
 // --- public methods ---
-function TableBuilder(data)
+function TableBuilder(size, data)
 {
-    let arr = data.split(';');
+    let n = parseInt(size);
     let index = 0;
-    let n = parseInt(arr[index++]);
+    let arr = data.split(';');
     let table = new Table(n);
     for (let y = 0; y < n; y++) {
         for (let x = 0; x < n; x++) {
@@ -30,34 +31,29 @@ function Table(n) {
     }
 }
 
+Table.prototype.getIcon = function (player) {
+
+    let icon = '?';
+    if (player >= 0 && player <= icons.length) {
+        icon = icons[player];
+    }
+    return icon;
+};
+
 Table.prototype.printScreen = function () {
 
     let cx = '    ';
     for (let i = 0; i < this.n; i++) {
-        cx += (" " + String.fromCharCode(65 + i) + ' ');
+        cx += (' ' + String.fromCharCode(65 + i) + ' ');
     }
     Screen.println(cx);
 
     const POINT = 4;
     let cy = '';
     for (let j = 0; j < this.n; j++) {
-        cy = j.toString().padStart(3) + " ";
+        cy = j.toString().padStart(3) + ':';
         for (let i = 0; i < this.n; i++) {
-            let chr;
-            switch (this.matr[j][i]) {
-                case 0:
-                    chr = ' . ';
-                    break;
-                case 1:
-                    chr = ' O ';
-                    break;
-                case 2:
-                    chr = ' X ';
-                    break;
-                default:
-                    chr = ' ? ';
-            }
-
+            let chr = ' ' + this.getIcon(this.matr[j][i]) + ' ';
             if (Math.abs(i - this.middle) === POINT && Math.abs(j - this.middle) === POINT) {
                 if (this.matr[j][i] === 0) {
                     chr = ' _ ';
@@ -78,10 +74,10 @@ Table.prototype.set = function (cell) {
 
     let curr = this.matr[y][x];
     if (player > 0 && curr > 0) {
-        throw new Error("Already occupied: " + curr);
+        throw new Error('Already occupied: ' + curr);
     }
-    if (player == 0 && curr == 0) {
-        throw new Error("This space is already empty");
+    if (player === 0 && curr === 0) {
+        throw new Error('This space is already empty');
     }
 
     this.matr[y][x] = player;
@@ -89,7 +85,7 @@ Table.prototype.set = function (cell) {
 
 Table.prototype.save = function() {
 
-    let line = this.n.toString() + ';';
+    let line = this.n.toString() + '\n';
     for (let y = 0; y < this.n; y++) {
         let row = '';
         for (let x = 0; x < this.n; x++) {
@@ -124,6 +120,9 @@ Table.prototype.getYX = function (y, x) {
 
 Table.prototype.setYX = function (y, x, val) {
 
+    if (isNaN(val)) {
+        throw new Error(`setting invalid value (val NaN): ${y}-${x}:${val}`);
+    }
     if (x >= 0 && x < this.n && y >= 0 && y < this.n) {
         this.matr[y][x] = val;
     }

@@ -1,76 +1,96 @@
 'use strict';
 
 // --- import ---
-const StrUtils = require('./strUtils');
+const objectUtils = require('./objectUtils');
 
 // 1 = my opponent
 // 2 = my self
+const EMPTY = '0';
+const OPPONENT = '1';
+const CURRENT = '2';
+const MAX = 100000;
 const values = new Map();
 
-values.set('1220', [0, 0, 0, 200]);
-values.set('2110', [0, 0, 0, 400]);
-values.set('1200', [0, 0, -40, -10]);
-values.set('2100', [0, 0, -40, -10]);
-values.set('1020', [0, -40, 0, -10]);
+values.set('10', [0, 1]);
+values.set('20', [0, 5]);
 
-values.set('01110', [200, 0, 0, 0, 300]);
-values.set('02220', [200, 0, 0, 0, 300]);
-values.set('22220', [0, 0, 0, 0, 1000]);
-values.set('11110', [0, 0, 0, 0, 500]);
-values.set('02202', [20, 0, 0, 300, 0]);
-values.set('22020', [0, 0, 300, 0, 20]);
-values.set('01101', [20, 0, 0, 300, 0]);
-values.set('11010', [0, 0, 300, 0, 20]);
-values.set('02111', [-50, 0, 0, 0, 0]);
-values.set('21110', [0, 0, 0, 0, -20]);
-values.set('12220', [0, 0, 0, 0, 300]);
+// missing
+// 0 2 0 2 0
+
+values.set('1220', [0, 0, 0, 2000]); // avoid peer capture
+values.set('2110', [0, 0, 0, 4000]); // capture peer
+values.set('1200', [0, 0, -400, -100]);
+values.set('2100', [0, 0, -400, -100]);
+values.set('1020', [0, -400, 0, -100]);
+
+values.set('01100', [0, 0, 0, 500, 0]);
+values.set('02200', [0, 0, 0, 1000, 0]);
+
+values.set('01110', [3000, 0, 0, 0, 3000]);
+values.set('02220', [3000, 0, 0, 0, 3000]);
+values.set('22220', [0, 0, 0, 0, MAX]);
+values.set('11110', [0, 0, 0, 0, 5000]);
+values.set('02202', [200, 0, 0, 3000, 0]);
+values.set('22020', [0, 0, 3000, 0, 200]);
+values.set('01101', [200, 0, 0, 3000, 0]);
+values.set('11010', [0, 0, 3000, 0, 200]);
+values.set('02111', [-500, 0, 0, 0, 0]);
+values.set('21110', [0, 0, 0, 0, -200]);
+values.set('12220', [0, 0, 0, 0, 3000]);
 
 // --- Exported Object ---
 (function() {
-    console.log('(value validation: OK)');
-    values.forEach(function (value, key, map) {
+    values.forEach(function (value, key) {
 
         let size = key.length;
-        if (value.length != size) {
+        if (value.length !== size) {
             throw new Error(key);
         }
 
         for (let i = 0; i < size; i++) {
-            let error = false;
             let ch = key.charAt(i);
-            if (ch !== '0' && value[i] !== 0) {
-                error = true;
-            }
-            if (ch === '0' && value[i] === 0) {
-                error = true;
-            }
-            if (error) {
-                throw new Error('Illegal value for key: ' + key + ', weights: ' + value);
+            if (ch !== EMPTY && value[i] !== 0) {
+                throw new Error(`Illegal value for key: ${key}, weights: ${value}`);
             }
         }
     });
+    console.log('(value validation: OK)');
 })();
 
 /**
  * @param {string} key
- * @return {array} the array corresponding to the key
+ * @return {object} an object containing the array result and a flag if a peer is captured
  */
 function getValue(key) {
 
     let reverse = false;
+    let capture = 0;
     let result = null;
+
     if (!values.has(key)) {
-        key = StrUtils.reverseStr(key);
+        key = objectUtils.reverseStr(key);
         reverse = true;
     }
 
     if (values.has(key)) {
-        result = values.get(key);
+        // peer captured ?
+        capture = EMPTY;
+        capture = (key.indexOf('1220') >= 0) ? OPPONENT : capture;
+        capture = (key.indexOf('2110') >= 0) ? CURRENT : capture;
+
+        result = objectUtils.copyArr(values.get(key));
         if (reverse) {
-            result = result.reverse();
+            result = objectUtils.reverseArr(result);
         }
     }
-    return result;
+    return {
+        arr: result,
+        peerCapturer: capture
+    };
 }
 
 module.exports.getValue = getValue;
+module.exports.empty = EMPTY;
+module.exports.current = CURRENT;
+module.exports.opponent = OPPONENT;
+
